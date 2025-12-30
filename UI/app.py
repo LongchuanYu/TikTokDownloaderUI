@@ -24,6 +24,8 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = "login"
 
+DW_DIR = "/home/liyang/Downloads/DoukDownload"
+
 # =====================
 # 模拟用户（你可以换数据库）
 # =====================
@@ -35,7 +37,7 @@ USERS = {
 }
 
 def remote_url(api_url):
-    return f'http://localhost:5555/{api_url}'
+    return f'http://localhost:5555{api_url}'
 
 def parse_dy_url(dy_url):
     try:
@@ -171,15 +173,21 @@ def confirm_api():
         return Response().error("获取作品详情失败")
     res_json = res.json()
     
-    download_url = res_json.get('downloads')
-    res = download_small_file_by_requests(download_url, )
+    try:
+        data = res_json['data']
+        download_url = data['downloads']
+        desc = data['desc']
+    except Exception as e:
+        print(res.json())
+        return Response().error("detail字段获取错误")
 
-    
+    dw_path = os.path.join(DW_DIR, desc[:10])
 
-    return jsonify({
-        "success": True,
-        "result": result
-    })
+    err_msg = download_small_file_by_requests(download_url, dw_path)
+    if err_msg:
+        return Response().error(f"下载失败: {err_msg}")
+
+    return Response().success("成功")
 
 # =====================
 # 退出登录
