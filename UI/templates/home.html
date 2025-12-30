@@ -1,0 +1,140 @@
+{% extends "base.html" %} {% block title %}主页{% endblock %} {% block head %}
+<style>
+  body {
+    margin-bottom: 60px;
+  }
+  .tabbar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    background: #fff;
+    border-top: 1px solid #ddd;
+    display: flex;
+  }
+  .tab-item {
+    flex: 1;
+    text-align: center;
+    line-height: 60px;
+    color: #666;
+    cursor: pointer;
+  }
+  .tab-item.active {
+    color: #0d6efd;
+    font-weight: bold;
+  }
+  .page {
+    display: none;
+    padding: 15px;
+  }
+  .page.active {
+    display: block;
+  }
+</style>
+{% endblock %} {% block content %}
+
+<!-- 主页 -->
+<div id="page-home" class="page active">
+  <h4 class="mb-3">主页</h4>
+
+  <div class="mb-3">
+    <input
+      type="text"
+      id="inputText"
+      class="form-control"
+      placeholder="点击粘贴或输入"
+    />
+  </div>
+
+  <div class="d-flex gap-2">
+    <button class="btn btn-secondary flex-fill" onclick="focusInput()">
+      粘贴
+    </button>
+    <button class="btn btn-primary flex-fill" onclick="confirmInput()">
+      确认
+    </button>
+  </div>
+
+  <div class="mt-3">
+    <div id="resultBox" class="alert alert-info d-none"></div>
+  </div>
+</div>
+
+<!-- 我的 -->
+<div id="page-me" class="page">
+  <h4 class="mb-3">我的</h4>
+  <p>用户：{{ current_user.username }}</p>
+  <a href="/logout" class="btn btn-danger w-100 mt-4">注销登录</a>
+</div>
+
+<!-- TabBar -->
+<div class="tabbar">
+  <div class="tab-item active" onclick="switchTab('home')">🏠 主页</div>
+  <div class="tab-item" onclick="switchTab('me')">👤 我的</div>
+</div>
+
+{% endblock %} {% block script %}
+<script>
+  function switchTab(tab) {
+    document.getElementById("page-home").classList.remove("active");
+    document.getElementById("page-me").classList.remove("active");
+    document
+      .querySelectorAll(".tab-item")
+      .forEach((el) => el.classList.remove("active"));
+
+    if (tab === "home") {
+      document.getElementById("page-home").classList.add("active");
+      document.querySelectorAll(".tab-item")[0].classList.add("active");
+    } else {
+      document.getElementById("page-me").classList.add("active");
+      document.querySelectorAll(".tab-item")[1].classList.add("active");
+    }
+  }
+
+  function focusInput() {
+    const input = document.getElementById("inputText");
+    input.focus();
+    input.select();
+  }
+
+  async function confirmInput() {
+    const input = document.getElementById("inputText");
+    const resultBox = document.getElementById("resultBox");
+    const value = input.value.trim();
+
+    if (!value) {
+      alert("请输入内容");
+      return;
+    }
+
+    resultBox.classList.add("d-none");
+
+    try {
+      const resp = await fetch("/api/confirm", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ text: value }),
+      });
+
+      const data = await resp.json();
+
+      if (!data.success) {
+        resultBox.className = "alert alert-danger";
+        resultBox.innerText = data.message;
+      } else {
+        resultBox.className = "alert alert-success";
+        resultBox.innerText = data.result;
+      }
+
+      resultBox.classList.remove("d-none");
+    } catch (e) {
+      resultBox.className = "alert alert-danger";
+      resultBox.innerText = "请求失败，请检查网络";
+      resultBox.classList.remove("d-none");
+    }
+  }
+</script>
+{% endblock %}
